@@ -2,6 +2,7 @@ window.onload = function() {
 	var stage = new createjs.Stage("playground");
 	var gameWidth = 400;
 	var gameHeight = 400;
+	var divisions = 16;
 
 	var keyStates = {
 		UP: false,
@@ -11,14 +12,13 @@ window.onload = function() {
 	};
 	var INV_PI_180 = 180.0/Math.PI;
 
-	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 200 };
-	var enemies;
+	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 200, radius: 10 };
+	var enemies = [];
 	var bullets;
 	var background;
 
 	function init() {
 		var i;
-		var divisions = 16;
 
 		background = new createjs.Shape();
 		var bgGfx = background.graphics;
@@ -30,6 +30,8 @@ window.onload = function() {
 			bgGfx.moveTo(0, div).lineTo(gameWidth, div);
 		}
 		stage.addChild(background);
+
+		createEnemyPool();
 
 		player.shape = new createjs.Shape();
 		player.shape.graphics.setStrokeStyle(1, "round")
@@ -50,6 +52,20 @@ window.onload = function() {
 		resize();
 	}
 
+	function createEnemyPool() {
+		var count = 15;
+		for (; count>0; --count) {
+			var enemy = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 100, radius: 10 };
+			enemy.shape = new createjs.Shape();
+			enemy.shape.graphics.setStrokeStyle(1, "round")
+				.beginStroke("#ef3030")
+				.drawCircle(0, 0, enemy.radius);
+			enemy.shape.visible = false;
+			enemies.push(enemy);
+			stage.addChild(enemy.shape);
+		}
+	}
+
 	function handleTick() {
 		// Input handling
 		var acc = 200;
@@ -64,9 +80,14 @@ window.onload = function() {
 		// Game updates
 		var elapsed = createjs.Ticker.getInterval() * 0.001;
 
+		spawner.update(elapsed);
+
 		updateMotion(player, elapsed);
+		collideWithWalls(player, false);
+		enemies.forEach(function(elt, i) { updateMotion(elt, elapsed); collideWithWalls(elt, true); });
 		if (player.acc.y != 0 || player.acc.x != 0)
 			player.shape.rotation = Math.atan2(player.acc.y, player.acc.x) * INV_PI_180 - 90;
+
 		stage.update();
 	}
 
@@ -90,6 +111,66 @@ window.onload = function() {
 		obj.shape.x += obj.vel.x * elapsed;
 		obj.shape.y += obj.vel.y * elapsed;
 	}
+
+	function collideWithWalls(obj, bounce) {
+		if (obj.shape.visible) {
+			var x = obj.shape.x;
+			var y = obj.shape.y;
+			var radius = obj.radius;
+			if (x-radius <= 0 || x+radius >= gameWidth) {
+				obj.shape.x += (x-radius <= 0) ? -(x-radius) : gameWidth-(x+radius);
+				if (bounce) {
+					obj.vel.x = -obj.vel.x;
+					obj.acc.x = -obj.acc.x;
+				}
+			}
+			if (y-radius <= 0 || y+radius >= gameHeight) {
+				obj.shape.y += (y-radius <= 0) ? -(y-radius) : gameHeight-(y+radius);
+				if (bounce) {
+					obj.vel.y = -obj.vel.y;
+					obj.acc.y = -obj.acc.y;
+				}
+			}
+		}
+	}
+
+	var spawner = {
+		spawnInterval: 2.0, // number of seconds to wait before spawning
+		spawnElapsed: 0.0,
+
+		update: function(elapsed) {
+			this.spawnElapsed += elapsed;
+			if (this.spawnElapsed >= this.spawnInterval) {
+				this.spawnEnemy();
+				this.spawnElapsed -= this.spawnInterval;
+			}
+		},
+
+		freeFilter: function(elt, i) {
+			return !elt.shape.visible;
+		},
+
+		spawnEnemy: function() {
+			var freeEnemies = enemies.filter(this.freeFilter);
+			if (freeEnemies.length == 0)
+				return;
+
+			var freeEnemy = freeEnemies[0];
+			var closeToPlayer = true;
+			while (closeToPlayer) {
+				freeEnemy.shape.x = Math.random() * (gameWidth-30)+15;
+				freeEnemy.shape.y = Math.random() * (gameHeight-30)+15;
+
+				closeToPlayer = sqDist(freeEnemy.shape, player.shape) < 25*25;
+			}
+
+			freeEnemy.shape.visible = true;
+			freeEnemy.vel.x = 0;
+			freeEnemy.vel.y = 0;
+			freeEnemy.acc.x = (Math.random()-0.5) * 20;
+			freeEnemy.acc.y = (Math.random()-0.5) * 20;
+		}
+	};
 
 	// Helper functions
 	// Returns a keyUp/keyDown callback
@@ -137,6 +218,13 @@ window.onload = function() {
 		}
 	}
 
+	// Calculates squared distance between shapes
+	function sqDist(shape1, shape2) {
+		var dx = shape1.x - shape2.x;
+		var dy = shape1.y - shape2.y;
+		return dx*dx + dy*dy;
+	}
+
 	// Handles resizing of stage
 	function resize() {
 		var winWidth = window.innerWidth * 0.9;
@@ -147,7 +235,6 @@ window.onload = function() {
 
 		stage.canvas.width = gameWidth * scale;
 		stage.canvas.height = gameHeight * scale;
-		console.log(stage.canvas.width, stage.canvas.height);
 	}
 
 	// Finally, start it all
