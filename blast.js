@@ -9,7 +9,7 @@ window.onload = function() {
 	};
 	var INV_PI_180 = 180.0/Math.PI;
 
-	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0} };
+	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 200 };
 	var enemies;
 	var bullets;
 	var background;
@@ -80,10 +80,14 @@ window.onload = function() {
 		if (Math.abs(obj.vel.y) <= 0.0001)
 			obj.vel.y = 0;
 
+		clampMag(obj.vel, obj.maxspeed);
+
 		obj.shape.x += obj.vel.x * elapsed;
 		obj.shape.y += obj.vel.y * elapsed;
 	}
 
+	// Helper functions
+	// Returns a keyUp/keyDown callback
 	function keyEvent(isKeyDown) {
 		var state = isKeyDown;
 
@@ -118,5 +122,16 @@ window.onload = function() {
 		};
 	}
 
+	// Clamps the magnitude of a vector to a given maximum
+	function clampMag(vec, maxmag) {
+		var mag_sq = vec.x*vec.x + vec.y*vec.y;
+		if (mag_sq > maxmag*maxmag) {
+			var factor = maxmag / Math.sqrt(mag_sq);
+			vec.x *= factor;
+			vec.y *= factor;
+		}
+	}
+
+	// Finally, start it all
 	init();
 };
