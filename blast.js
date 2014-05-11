@@ -18,11 +18,14 @@ window.onload = function() {
 	var enemies = [];
 	var bullets = [];
 	var background;
+	var grid;
 
 	var enemySpawner;
 	var bulletSpawner;
 
 	function init() {
+		AudioGrid.init(divisions);
+
 		background = new createjs.Shape();
 		var bgGfx = background.graphics;
 		bgGfx.setStrokeStyle(1).beginStroke("#505050");
@@ -33,6 +36,20 @@ window.onload = function() {
 			bgGfx.moveTo(0, div).lineTo(gameWidth, div);
 		}
 		stage.addChild(background);
+
+		grid = [];
+		for (var r=0; r<divisions; ++r) {
+			var rowCells = [];
+			for (var c=0; c<divisions; ++c) {
+				var cell = new createjs.Shape();
+				cell.graphics.beginFill("#607090")
+					.rect(c*dx+4, r*dx+4, dx-8, dx-8);
+				cell.visible = false;
+				rowCells.push(cell);
+				stage.addChild(cell);
+			}
+			grid.push(rowCells);
+		}
 
 		createEnemyPool(15);
 		createBulletPool(100);
@@ -57,6 +74,8 @@ window.onload = function() {
 		window.onresize = resize;
 
 		resize();
+
+		AudioGrid.start();
 	}
 
 	function createEnemyPool(count) {
@@ -108,6 +127,15 @@ window.onload = function() {
 		bullets.forEach(function(elt, i) { updateMotion(elt, elapsed); checkBulletCollisions(elt); });
 		if (player.acc.y != 0 || player.acc.x != 0)
 			player.shape.rotation = Math.atan2(player.acc.y, player.acc.x) * INV_PI_180 - 90;
+
+		// Go through the audio grid and set up the visibility
+		for (var r=0; r<divisions; ++r) {
+			for (var c=0; c<divisions; ++c) {
+				grid[r][c].visible = (AudioGrid.grid[r][c] > 0);
+			}
+		}
+		AudioGrid.update(elapsed);
+		//TODO: Highlight the current column
 
 		stage.update();
 	}
@@ -174,7 +202,7 @@ window.onload = function() {
 				return enemy.shape.visible && (sqDist(bullet.shape, enemy.shape) < threshold*threshold);
 			});
 			if (hitlist.length > 0) {
-				hitlist.forEach(hideObject);
+				hitlist.forEach(killEnemy);
 				bullet.shape.visible = false;
 			}
 		}
@@ -304,8 +332,11 @@ window.onload = function() {
 		return !elt.shape.visible;
 	}
 
-	function hideObject(elt, i) {
+	function killEnemy(elt, i) {
 		elt.shape.visible = false;
+		var col = ~~(elt.shape.x / gameWidth * divisions);
+		var row = ~~(elt.shape.y / gameHeight * divisions);
+		AudioGrid.grid[row][col] = 1;
 	}
 
 	// Handles resizing of stage
