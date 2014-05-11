@@ -31,7 +31,7 @@ AudioGrid = {
 			if (this.grid[r][col] > 0)
 				activeCells.push(r);
 		}
-		var gain = (activeCells.length > 0) ? 0.8/activeCells.length : 0.0;
+		var gain = (activeCells.length > 0) ? 0.7/activeCells.length : 0.0;
 		activeCells.forEach(function(elt, i) {
 			this.pentatonicScale[elt].play(gain, time);
 		}, this);

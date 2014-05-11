@@ -19,6 +19,7 @@ window.onload = function() {
 	var bullets = [];
 	var background;
 	var grid;
+	var colHilite;
 
 	var enemySpawner;
 	var bulletSpawner;
@@ -50,6 +51,12 @@ window.onload = function() {
 			}
 			grid.push(rowCells);
 		}
+
+		colHilite = new createjs.Shape();
+		colHilite.graphics.beginFill("#f0ff33")
+			.rect(2, 2, dx-4, divisions*dx-4);
+		colHilite.alpha = 0.3;
+		stage.addChild(colHilite);
 
 		createEnemyPool(15);
 		createBulletPool(100);
@@ -135,7 +142,8 @@ window.onload = function() {
 			}
 		}
 		AudioGrid.update(elapsed);
-		//TODO: Highlight the current column
+		// Highlight the current column
+		colHilite.x = gameWidth/divisions * (AudioGrid.currCol>0 ? AudioGrid.currCol-1: divisions-1);
 
 		stage.update();
 	}
