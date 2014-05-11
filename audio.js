@@ -1,5 +1,6 @@
 AudioGrid = {
 	clipDur: 0.3, // Clip duration in seconds
+	decayFactor: 0.80,
 	grid: [],
 	currCol: 0,
 
@@ -31,9 +32,13 @@ AudioGrid = {
 			if (this.grid[r][col] > 0)
 				activeCells.push(r);
 		}
-		var gain = (activeCells.length > 0) ? 0.7/activeCells.length : 0.0;
+		var gain = (activeCells.length > 0) ? 0.5/activeCells.length : 0.0;
 		activeCells.forEach(function(elt, i) {
-			this.pentatonicScale[elt].play(gain, time);
+			var factor = this.grid[elt][this.currCol];
+			this.pentatonicScale[elt].play(gain*factor, time);
+			// Decay
+			factor *= this.decayFactor;
+			this.grid[elt][this.currCol] = (factor < 0.1) ? 0 : factor;
 		}, this);
 
 		this.currCol = (1 + this.currCol) % this.divisions;

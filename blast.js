@@ -45,7 +45,6 @@ window.onload = function() {
 				var cell = new createjs.Shape();
 				cell.graphics.beginFill("#607090")
 					.rect(c*dx+4, r*dx+4, dx-8, dx-8);
-				cell.visible = false;
 				rowCells.push(cell);
 				stage.addChild(cell);
 			}
@@ -138,7 +137,7 @@ window.onload = function() {
 		// Go through the audio grid and set up the visibility
 		for (var r=0; r<divisions; ++r) {
 			for (var c=0; c<divisions; ++c) {
-				grid[r][c].visible = (AudioGrid.grid[r][c] > 0);
+				grid[r][c].alpha = AudioGrid.grid[r][c];
 			}
 		}
 		AudioGrid.update(elapsed);
