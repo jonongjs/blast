@@ -1,5 +1,7 @@
 window.onload = function() {
 	var stage = new createjs.Stage("playground");
+	var gameWidth = 400;
+	var gameHeight = 400;
 
 	var keyStates = {
 		UP: false,
@@ -21,11 +23,11 @@ window.onload = function() {
 		background = new createjs.Shape();
 		var bgGfx = background.graphics;
 		bgGfx.setStrokeStyle(1).beginStroke("#505050");
-		var dx = stage.canvas.width / divisions;
+		var dx = gameWidth / divisions;
 		for (i=0; i<=divisions; ++i) {
 			var div = i*dx;
-			bgGfx.moveTo(div, 0).lineTo(div, stage.canvas.height);
-			bgGfx.moveTo(0, div).lineTo(stage.canvas.width, div);
+			bgGfx.moveTo(div, 0).lineTo(div, gameHeight);
+			bgGfx.moveTo(0, div).lineTo(gameWidth, div);
 		}
 		stage.addChild(background);
 
@@ -43,6 +45,9 @@ window.onload = function() {
 		createjs.Ticker.addEventListener("tick", handleTick);
 		window.onkeydown = keyEvent(true);
 		window.onkeyup = keyEvent(false);
+		window.onresize = resize;
+
+		resize();
 	}
 
 	function handleTick() {
@@ -130,6 +135,19 @@ window.onload = function() {
 			vec.x *= factor;
 			vec.y *= factor;
 		}
+	}
+
+	// Handles resizing of stage
+	function resize() {
+		var winWidth = window.innerWidth * 0.9;
+		var winHeight = window.innerHeight * 0.9;
+
+		var scale = Math.min(winWidth/gameWidth, winHeight/gameHeight);
+		stage.scaleX = stage.scaleY = scale;
+
+		stage.canvas.width = gameWidth * scale;
+		stage.canvas.height = gameHeight * scale;
+		console.log(stage.canvas.width, stage.canvas.height);
 	}
 
 	// Finally, start it all
