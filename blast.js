@@ -14,7 +14,7 @@ window.onload = function() {
 	var PI_180 = Math.PI/180.0;
 	var INV_PI_180 = 180.0/Math.PI;
 
-	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 200, radius: 10 };
+	var player = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 200, radius: 10, last: {x:0, y:0} };
 	var enemies = [];
 	var bullets = [];
 	var background;
@@ -86,7 +86,7 @@ window.onload = function() {
 
 	function createEnemyPool(count) {
 		for (; count>0; --count) {
-			var enemy = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 100, radius: 10 };
+			var enemy = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 100, radius: 10, last: {x:0, y:0} };
 			enemy.shape = new createjs.Shape();
 			enemy.shape.graphics.setStrokeStyle(1, "round")
 				.beginStroke("#ef3030")
@@ -99,7 +99,7 @@ window.onload = function() {
 
 	function createBulletPool(count) {
 		for (; count>0; --count) {
-			var bullet = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 1000, radius: 2 };
+			var bullet = { shape: null, vel: {x: 0, y: 0}, acc: {x: 0, y: 0}, maxspeed: 1000, radius: 2, last: {x:0, y:0} };
 			bullet.shape = new createjs.Shape();
 			bullet.shape.graphics.setStrokeStyle(1, "round")
 				.beginStroke("#cccccc")
@@ -167,6 +167,8 @@ window.onload = function() {
 
 		clampMag(obj.vel, obj.maxspeed);
 
+		obj.last.x = obj.shape.x;
+		obj.last.y = obj.shape.y;
 		obj.shape.x += obj.vel.x * elapsed;
 		obj.shape.y += obj.vel.y * elapsed;
 	}
@@ -204,9 +206,31 @@ window.onload = function() {
 				return;
 			}
 
+			var segment = { x: bullet.shape.x-bullet.last.x, y: bullet.shape.y-bullet.last.y };
+			var segmentMag = Math.sqrt(segment.x*segment.x + segment.y*segment.y);
+			if (segmentMag > 0) {
+				segment.x /= segmentMag;
+				segment.y /= segmentMag;
+			}
+
 			var hitlist = enemies.filter(function(enemy, i) {
-				var threshold = bullet.radius+enemy.radius;
-				return enemy.shape.visible && (sqDist(bullet.shape, enemy.shape) < threshold*threshold);
+				if (enemy.shape.visible) {
+					var closest = { x: bullet.last.x, y: bullet.last.y };
+					var vecToEnemy = { x: enemy.shape.x-bullet.last.x, y: enemy.shape.y-bullet.last.y };
+					var proj = vecToEnemy.x*segment.x + vecToEnemy.y*segment.y;
+					if (proj > segmentMag) {
+						closest.x = bullet.shape.x;
+						closest.y = bullet.shape.y;
+					} else if (proj > 0) {
+						closest.x += proj * segment.x;
+						closest.y += proj * segment.y;
+					}
+					var dx = enemy.shape.x-closest.x;
+					var dy = enemy.shape.y-closest.y;
+					var distSq = dx*dx+dy*dy;
+					return (dx*dx+dy*dy < enemy.radius*enemy.radius);
+				}
+				return false;
 			});
 			if (hitlist.length > 0) {
 				hitlist.forEach(killEnemy);
@@ -291,6 +315,7 @@ window.onload = function() {
 		var KEYCODE_A = 65;
 		var KEYCODE_D = 68;
 		var KEYCODE_J = 74;
+		var KEYCODE_SPACE = 32;
 
 		return function(evt) {
 			switch (evt.keyCode) {
@@ -311,6 +336,7 @@ window.onload = function() {
 					keyStates["RIGHT"] = state;
 					break;
 				case KEYCODE_J:
+				case KEYCODE_SPACE:
 					keyStates["SHOOT"] = state;
 					break;
 			}
