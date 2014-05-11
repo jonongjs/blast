@@ -80,7 +80,7 @@ AudioGrid = {
 
 			var oscillator = this.context.createOscillator();
 			oscillator.frequency.value = freq;
-			var gainNode = this.context.createGainNode();
+			var gainNode = this.context.createGain();
 			gainNode.gain.value = 0.0;
 			gainNode.connect(this.context.destination);
 			oscillator.connect(gainNode);
