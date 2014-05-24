@@ -228,7 +228,8 @@ window.onload = function() {
 					var dx = enemy.shape.x-closest.x;
 					var dy = enemy.shape.y-closest.y;
 					var distSq = dx*dx+dy*dy;
-					return (dx*dx+dy*dy < enemy.radius*enemy.radius);
+					var threshold = enemy.radius + radius;
+					return (dx*dx+dy*dy < threshold*threshold);
 				}
 				return false;
 			});
